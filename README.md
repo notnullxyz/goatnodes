@@ -20,3 +20,10 @@ Go to index.php (directly, or via the dashboard) and uploaded your CSV
 The processor will also generate a parent_map.log
 You should be presented with a grid of the animals, and a link the to D3 family tree (created from the parent_map.log file)
 
+Some idea of the output, or a slice thereof...
+
+![Screenshot 2024-05-22 144350](https://github.com/notnullxyz/goatnodes/assets/26741473/4c96a19c-964b-4057-b857-ced64c93f345)
+
+and the tree:
+
+![Screenshot 2024-05-22 144408](https://github.com/notnullxyz/goatnodes/assets/26741473/9cea41ee-5945-445b-be9f-cae1f3586a32)
