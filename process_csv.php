@@ -103,6 +103,45 @@ function render_output($animals, $parent_map, $parent_map_file, $male_color, $fe
     ob_start(); // Start output buffering
     ?>
 	
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>GoatNodes Animals</title>
+		<style>
+			body { font-family: Helvetica, Arial, sans-serif; }
+			.tooltip {
+				position: relative;
+				display: inline-block;
+				border-bottom: 1px dotted black; /* If you want a dotted underline for tooltip text */
+			}
+
+			.tooltip .tooltiptext {
+				visibility: hidden;
+				width: auto;
+				background-color: black;
+				color: #fff;
+				text-align: center;
+				border-radius: 9px;
+				padding: 10px;
+				position: absolute;
+				z-index: 1;
+				bottom: 150%;
+				left: 50%;
+				margin-left: -60px;
+				opacity: 0;
+				transition: opacity 0.5s;
+			}
+
+			.tooltip:hover .tooltiptext {
+				visibility: visible;
+				opacity: 0.85;
+			}
+		</style>
+	</head>
+	
+	
 	<h1>Simple-Earth.org Goat Nodes</h1>
     <p>File: <?= htmlspecialchars($filename) ?><br>
     Date: <?= date('Y-m-d H:i:s') ?><br>
@@ -130,14 +169,22 @@ function render_output($animals, $parent_map, $parent_map_file, $male_color, $fe
         foreach ($location_animals as $animal) {
 			if ($verbose) {	logToFile("Wrangling Animal: " . $animal['name']); }
             $color = $animal['sex'] === 'M' ? $male_color : ($animal['sex'] === 'F' ? $female_color : '#ccc');
-            $icon = $animal['sex'] === 'M' ? '&#9794;' : ($animal['sex'] === 'F' ? '&#9792;' : '&#176;');
+            $icon = $animal['sex'] === 'M' ? '<span class="tooltip">&#9794;<span class="tooltiptext">Gender is male: buck,bull,rooster,boar,stallion,drake etc</span></span>' 
+				: ($animal['sex'] === 'F' ? '<span class="tooltip">&#9792;<span class="tooltiptext">Gender is female: doe,cow,hen,sow,mare,hen etc</span></span>' 
+				: '<span class="tooltip">&#176;<span class="tooltiptext">unspecified</span></span>');
             $birthdate = $animal['birthdate'] ? date('m/Y', strtotime($animal['birthdate'])) : 'N/A';
+			
+			$castrated_icon = $animal['is_castrated'] == true ? '<span class="tooltip">&#9737;<span class="tooltiptext">Animal is Castrated: whether, steer, capon, barrow, gelding, hokie etc</span></span>'
+				: '<span class="tooltip">&#9738;<span class="tooltiptext">Uncastrated</span></span>';
+						
             $age = $animal['age'] ?? 'N/A'; // Use the calculated age
-            $age_icon = ($age < 1) ? '&#9744;' : (($age > 6) ? '&#9765;' : '&#9752;');
-            $archived_icon = $animal['status'] === 'archived' ? '&#9842;' : '';
+            $age_icon = ($age < 1) ? '<span class="tooltip">&#9744;<span class="tooltiptext">Not yet at recommended breeding age</span></span>' 
+				: (($age > 6) ? '<span class="tooltip">&#9765;<span class="tooltiptext">Almost at end of breeding age</span></span>' 
+				: '<span class="tooltip">&#9752;<span class="tooltiptext">Prime breeding age</span></span>');
+            $archived_icon = $animal['status'] === 'archived' ? '<span class="tooltip">&#9842;<span class="tooltiptext">Archived/terminated/sold/reference animal</span></span>' : '';
 
             $children_list = !empty($parent_map[$animal['name']]['children']) ? "<ul><li>" . implode("</li><li>", $parent_map[$animal['name']]['children']) . "</li></ul>" : 'None';
-            $parents_list = $animal['parent'] !== 'Jane Doe|John Buck' ? implode(' & ', explode('|', $animal['parent'])) : 'None';
+            $parents_list = $animal['parent'] !== '[R] Jane Doe|[R] John Buck' ? implode(' & ', explode('|', $animal['parent'])) : 'None';
 
             $image_path = "images/" . htmlspecialchars($animal['name']) . ".jpg";
             $image_html = file_exists($image_path) ? "<img src='$image_path' alt='" . htmlspecialchars($animal['name']) . "' style='width: 100%; height: auto;'>" : "<div style='width: 100%; height: 0; padding-bottom: 100%; background-color: #eee;'></div>";
@@ -146,7 +193,7 @@ function render_output($animals, $parent_map, $parent_map_file, $male_color, $fe
             <div style='background-color: <?= $color ?>; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: calc(25% - 10px);'>
                 <div style='display: flex; justify-content: space-between;'>
                     <div>
-                        <strong><?= htmlspecialchars($animal['name']) ?></strong> <?= $icon ?> <?= $age_icon ?> <?= $archived_icon ?><br>
+                        <strong><?= htmlspecialchars($animal['name']) ?></strong> <?= $icon ?> <?= $age_icon ?> <?= $archived_icon ?> <?= $castrated_icon ?><br>
                         Birthdate: <?= $birthdate ?><br>
                         Age: <?= $age ?><br>
                         Parents: <?= $parents_list ?><br>
