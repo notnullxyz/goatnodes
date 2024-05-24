@@ -1,4 +1,10 @@
 <?php
+
+// disable caching and stuff, so we can always see the latest images
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['images'])) {
     $log_file = 'goatnodes.log';
 
@@ -24,16 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['images'])) {
             imagedestroy($image);
             imagedestroy($resized_image);
 
-            // Log the upload
-            $log_content = "Image uploaded: {$animal_name}.jpg (" . date('Y-m-d H:i:s') . ")\n";
-            file_put_contents($log_file, $log_content, FILE_APPEND);
+            // Log the upload$addr = $_SERVER["REMOTE_ADDR"];
+			$date = new DateTime();
+			$date = $date->format("Y/m/d h:i:s:u");
+			$addr = $_SERVER["REMOTE_ADDR"];
+			$filesize = filesize($target_file);
+			$message = $date . ': src ' . $addr .': ' . "Image uploaded -> {$animal_name}.jpg size: {$filesize} bytes";
+			file_put_contents($log_file, $message . PHP_EOL, FILE_APPEND);
         }
     }
 
-    echo "Images uploaded successfully.";
+    echo "<div class='alert alert-success'>Images uploaded successfully.</div>";
 }
 
-// Get all images in the images directory
+// mung up all the images in the images/ dir
 $images = glob("images/*.{jpg,png}", GLOB_BRACE);
 ?>
 
@@ -44,15 +54,22 @@ $images = glob("images/*.{jpg,png}", GLOB_BRACE);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple-Earth Goat Nodes Image Uploader</title>
     <style>
-        body { font-family: Helvetica, Arial, sans-serif; }
+        body { font-family: Helvetica, Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; }
+        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { padding: 5px; }
-        .form-group input[type="text"] { width: 100%; margin-top: 5px; }
-        .form-group button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .form-group input[type="file"],
+        .form-group input[type="text"],
+        .form-group button { padding: 10px; width: 100%; margin-top: 5px; }
+        .form-group button { background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .form-group button:hover { background-color: #218838; }
         .grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 20px; }
-        .grid-item { text-align: center; }
+        .grid-item { text-align: center; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 5px; padding: 10px; }
+        .grid-item img { width: auto; height: auto; max-width: 100%; max-height: 150px; border-radius: 5px; }
+        .alert { padding: 15px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px; margin-bottom: 20px; }
+        .back-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
     </style>
     <script>
         function addFileInput() {
@@ -70,30 +87,44 @@ $images = glob("images/*.{jpg,png}", GLOB_BRACE);
     </script>
 </head>
 <body>
-    <h1>Simple-Earth Goat Nodes Image Uploader</h1>
-    <p>This form is for uploading images of the goats present in the CSV. Images will be retained, or overwritten if the same name is supplied for a new image (effectively replacing a photo of your animal). All images will be converted to fit 150x150 pixels, and may appear distorted. Upload images as square as possible, and larger than 150x150px to get the best result. When completed, click back to home and upload your FarmOS animal exported CSV to see these animals appear in the output. Simple, with no warranties. =)</p>
-    <form action="upload_images.php" method="post" enctype="multipart/form-data">
-        <div id="file-input-container" class="form-group">
-            <label>Animal Image:</label>
-            <input type="file" name="images[]" accept=".jpg, .jpeg, .png" required>
-            <label>Animal Name:</label>
-            <input type="text" name="animal_names[]" required>
-        </div>
-        <button type="button" onclick="addFileInput()">Add Another Image</button>
-        <button type="submit">Upload Images</button>
-    </form>
-    <p><a href="index.php">Home</a></p>
-    
-    <?php if ($images): ?>
-        <h2>Currently Uploaded Images</h2>
-        <div class="grid-container">
-            <?php foreach ($images as $image): ?>
-                <div class="grid-item">
-                    <img src="<?= $image ?>" alt="<?= basename($image) ?>" style="width: auto; height: auto; max-width: 100%; max-height: 150px;">
-                    <p><?= basename($image) ?></p>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+    <div class="header">
+        <h1>Simple-Earth Goat Nodes Image Uploader</h1>
+    </div>
+    <div class="container">
+        <a href="dashboard.php" class="back-link">Back to Dashboard</a>
+        <p>This is the image uploader only.<br> Note: </p>
+        <ul>
+            <li>After upload, the file will be named [animal name].jpg - provide accurate animal name as per CSV/Data</li>
+            <li>Images will be resized to 150x150px. For better looking results upload 1:1 aspect ratio (square) images no smaller than 150 x 150 pixels</li>
+            <li>Images will be retained in a storage directory. Uploading a new image with the same name will overwrite the previous</li>
+            <li>Images are not strictly required. A white square placeholder will be shown if no image is available or names mismatch</li>
+            <li>GoatNodes is not yet multi-tenanted. To avoid images mixing with other users, run isolated instances.</li>
+            <li>There is no security here. Add your own, or risk someone replacing all your goat photos with something unsavoury</li>
+            <li>There are no warranties. This software is as-is. =)</li>
+        </ul>    
+        <form action="upload_images.php" method="post" enctype="multipart/form-data">
+            <div id="file-input-container" class="form-group">
+                <label>Animal Image:</label>
+                <input type="file" name="images[]" accept=".jpg, .jpeg, .png" required>
+                <label>Animal Name:</label>
+                <input type="text" name="animal_names[]" required>
+            </div>
+            <button type="button" onclick="addFileInput()">Add Another Image</button>
+            <button type="submit">Upload</button>
+        </form>
+        <p><a href="index.php">Home</a></p>
+        
+        <?php if ($images): ?>
+            <h2>Currently Uploaded Images</h2>
+            <div class="grid-container">
+                <?php foreach ($images as $image): ?>
+                    <div class="grid-item">
+                        <img src="<?= $image ?>" alt="<?= basename($image) ?>">
+                        <p><?= basename($image) ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </body>
 </html>
